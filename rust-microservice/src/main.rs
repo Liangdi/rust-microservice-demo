@@ -1,6 +1,13 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use serde::{Serialize, Deserialize};
 
+static NACOS_SERVER: &str = "http://127.0.0.1:8848/nacos";
+static PROVIDER_NAME: &str = "rust-microservice";
+static PROVIDER_HOST: &str = "127.0.0.1";
+static PROVIDER_PORT: i32 = 8080;
+
+mod nacos;
+
 #[derive(Serialize, Deserialize)]
 struct Message {
     msg: String,
@@ -26,15 +33,18 @@ async fn json_resp() -> impl Responder {
 }
 
 #[actix_rt::main]
-async fn main() -> std::io::Result<()> {
+async fn main()  {
     println!("listening at http://localhost:8080");
+    nacos::register_service();
     HttpServer::new(|| {
         App::new()
             .route("/", web::get().to(index))
             .route("/foo", web::get().to(plain_text_resp))
             .route("/bar",web::get().to(json_resp))
-    })
-        .bind("localhost:8080")?
-        .run()
-        .await
+    }).bind("127.0.0.1:8080")
+        .unwrap()
+        .run();
+
+    nacos::ping_schedule();
+
 }
